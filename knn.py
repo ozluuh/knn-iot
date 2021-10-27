@@ -2,7 +2,7 @@
 
 # Módulos (Bibliotecas)
 import math
-from os import path
+
 
 # Definição das funções
 # Utilizando como base Euclidiana
