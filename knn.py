@@ -115,6 +115,38 @@ def info_dataset(samples, clazz_pos, info = True):
     return [len(samples)] + [x for x in output.values()]
 
 
+# Separa o conjunto de treinamento e testes
+# perc = Percentual de treinamento (teste será calculado automaticamente)
+def separate_samples(samples, clazz, perc, info = True):
+    _, no_recurrence, recurrence = info_dataset(samples, clazz, info)
+
+    max_output_no_recurrence = int(perc * no_recurrence)
+    max_output_recurrence = int((1.0 - perc) * recurrence)
+
+    amount_no_recurrence = 0
+    amount_recurrence = 0
+
+    training_samples = []
+    test_samples = []
+
+    for sample in samples:
+        if(amount_no_recurrence + amount_recurrence) < (max_output_no_recurrence + max_output_recurrence):
+            # Conjunto de treinamento
+            training_samples.append(sample)
+            if sample[clazz] == 1 and amount_no_recurrence < max_output_no_recurrence:
+                amount_no_recurrence += 1
+            else:
+                amount_recurrence += 1
+        else:
+            # Conjunto de teste
+            test_samples.append(sample)
+    
+    if info:
+        print(f"Máximo de amostras para não recorrência: {max_output_no_recurrence}")
+        print(f"Máximo de amostras para recorrência: {max_output_recurrence}")
+
+    return (training_samples, test_samples)
+
 
 # Dados pra teste
 keys = {
@@ -133,7 +165,7 @@ keys = {
     },
     6: ["1","2","3"],
     7: ["left","right"],
-    8: ["left_up", "left_low", "right_up", "right_low", "central"],
+    8: ["?","left_up", "left_low", "right_up", "right_low", "central"],
     9: {
         "data": ["?", "yes", "no"],
         "min": 1,
@@ -142,6 +174,8 @@ keys = {
 }
 
 # Usando arquivo editado/simplificado contendo apenas 10 registros
-amostras = open_file("breast-cancer-10.data", keys)
+amostras = open_file("breast-cancer.data", keys)
+
+separate_samples(amostras, 0, 0.5)
 
 info_dataset(amostras, 0)
