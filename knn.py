@@ -62,7 +62,7 @@ def format_with(sample_list, dict_):
         item_dict_pos = dict_items.index(sample_list[idx])
 
         value = normalize_scale(item_dict_pos, items_max_len, v_min)
-        normalized_sample.insert(idx, round_default(value, decimal))
+        normalized_sample.append(round_default(value, decimal))
     
     return normalized_sample
 
@@ -118,7 +118,7 @@ def info_dataset(samples, clazz_pos, info = True):
 # Separa o conjunto de treinamento e testes
 # perc = Percentual de treinamento (teste será calculado automaticamente)
 def separate_samples(samples, clazz, perc, info = True):
-    _, no_recurrence, recurrence = info_dataset(samples, clazz, info)
+    _, recurrence, no_recurrence = info_dataset(samples, clazz, info)
 
     max_output_no_recurrence = int(perc * no_recurrence)
     max_output_recurrence = int((1.0 - perc) * recurrence)
@@ -133,6 +133,7 @@ def separate_samples(samples, clazz, perc, info = True):
         if(amount_no_recurrence + amount_recurrence) < (max_output_no_recurrence + max_output_recurrence):
             # Conjunto de treinamento
             training_samples.append(sample)
+            
             if sample[clazz] == 1 and amount_no_recurrence < max_output_no_recurrence:
                 amount_no_recurrence += 1
             else:
@@ -158,17 +159,19 @@ def knn(training_samples, sample_test, k, clazz):
     # Chaves dos vizinhos mais próximos
     neighboors = sorted(distances, key=distances.get)[:k]
 
+    # print(neighboors)
+
     # Votação
     amount_no_recurrence = 0
     amount_recurrence = 0
 
     for idx in neighboors:
-        if training_samples[idx][clazz] == 1: # saída da classe 1 (Recorrência)
-            amount_recurrence += 1
-        else:
+        if training_samples[idx][clazz] == 1: # saída da classe 1 (Não Recorrência)
             amount_no_recurrence += 1
+        else:
+            amount_recurrence += 1
     
-    if amount_recurrence > amount_no_recurrence:
+    if amount_no_recurrence > amount_recurrence:
         return 1
     
     return 0
@@ -176,37 +179,75 @@ def knn(training_samples, sample_test, k, clazz):
 
 # Dados pra teste
 keys = {
+    # Class
     0: {
-        "data": ["no-recurrence-events", "recurrence-events"],
+        "data": ["recurrence-events", "no-recurrence-events"],
         "decimal": 0
     },
-    1: ["10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99"],
-    2: ["lt40", "ge40", "premeno"],
-    3: ["0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"],
-    4: ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18-20", "21-23", "24-26", "27-29", "30-32", "33-35", "36-39"],
+    # Age
+    1: {
+        "data": ["10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99"],
+        "min": 4
+    },
+    # Menopause
+    2: {
+        "data": ["lt40", "ge40", "premeno"],
+        "min": 1
+    },
+    # Tumor-size
+    3: {
+        "data": ["0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"],
+        "min": 5.5
+    },
+    # Inv-nodes
+    4: {
+        "data": ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18-20", "21-23", "24-26", "27-29", "30-32", "33-35", "36-39"],
+        "min": 6,
+        "remove": 1
+    },
+    # Node-caps
     5: {
         "data": ["?", "yes", "no"],
         "min": 1,
-        "decimal": 0
+        "remove": 1
     },
+    # Deg-malig
     6: ["1","2","3"],
-    7: ["left","right"],
+    # Breast
+    7: {
+        "data": ["left","right"],
+        # "remove": 1
+    },
+    # Breast-quad
     8: {
         "data": ["?","left_up", "left_low", "right_up", "right_low", "central"],
-        "min": 1
+        "remove": 1
     },
+    # Irradiant
     9: {
-        "data": ["?", "yes", "no"],
-        "min": 1,
-        "decimal": 0
+        "data": ["yes", "no"]
     }
 }
 
-# Usando arquivo editado/simplificado contendo apenas 10 registros
 amostras = open_file("breast-cancer.data", keys)
 
-training, test = separate_samples(amostras, 0, 0.5)
+# print(f"Amostras: {amostras}")
 
-r = knn(training, test[0], clazz=0, k=17)
-print(test[0])
-print(r)
+# Percentual de treinamento
+perc=0.8
+clazz=0
+
+training, test = separate_samples(amostras, clazz, perc)
+
+amount_success = 0
+k=17
+
+for sample in test:
+    class_result = knn(training, sample, clazz=clazz, k=k)
+    if sample[clazz] == class_result:
+        amount_success += 1
+
+print(f"Total Treinamento: {len(training)}")
+print(f"Total Teste: {len(test)}")
+print(f"Total Acertos: {amount_success}")
+print(f"Porcentagem Acerto: {round_default(100*amount_success/len(test), 0)}%")
