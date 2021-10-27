@@ -111,7 +111,8 @@ def info_dataset(samples, clazz_pos, info = True):
         print('Total de amostras: ', len(samples))
         print('Amostras: ', output)
 
-    return [len(samples), output]
+    # Total de amostras + Total por classes (ordenado de acordo com posição)
+    return [len(samples)] + [x for x in output.values()]
 
 
 
