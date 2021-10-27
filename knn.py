@@ -147,6 +147,32 @@ def separate_samples(samples, clazz, perc, info = True):
 
     return (training_samples, test_samples)
 
+def knn(training_samples, sample_test, k, clazz):
+    distances = {}
+    
+    # Distância euclidiana de uma amostra sobre o conjunto
+    for idx in range(len(training_samples)):
+        distance = calc_distance(training_samples[idx], sample_test)
+        distances[idx] = distance
+
+    # Chaves dos vizinhos mais próximos
+    neighboors = sorted(distances, key=distances.get)[:k]
+
+    # Votação
+    amount_no_recurrence = 0
+    amount_recurrence = 0
+
+    for idx in neighboors:
+        if training_samples[idx][clazz] == 1: # saída da classe 1 (Recorrência)
+            amount_recurrence += 1
+        else:
+            amount_no_recurrence += 1
+    
+    if amount_recurrence > amount_no_recurrence:
+        return 1
+    
+    return 0
+
 
 # Dados pra teste
 keys = {
@@ -165,7 +191,10 @@ keys = {
     },
     6: ["1","2","3"],
     7: ["left","right"],
-    8: ["?","left_up", "left_low", "right_up", "right_low", "central"],
+    8: {
+        "data": ["?","left_up", "left_low", "right_up", "right_low", "central"],
+        "min": 1
+    },
     9: {
         "data": ["?", "yes", "no"],
         "min": 1,
@@ -176,6 +205,8 @@ keys = {
 # Usando arquivo editado/simplificado contendo apenas 10 registros
 amostras = open_file("breast-cancer.data", keys)
 
-separate_samples(amostras, 0, 0.5)
+training, test = separate_samples(amostras, 0, 0.5)
 
-info_dataset(amostras, 0)
+r = knn(training, test[0], clazz=0, k=17)
+print(test[0])
+print(r)
