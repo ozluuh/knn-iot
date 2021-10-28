@@ -34,6 +34,12 @@ def open_file(filename, dic):
             data = format_with(tempdata, dic)
             samples.append(data)
 
+    with open("output.data", "w") as output:
+        for entry in samples:
+            r = str(entry).replace("[","").replace("]","")
+            # print(r)
+            output.write(f"{r}\n")
+
     return samples
 
 
@@ -187,29 +193,29 @@ keys = {
     # Age
     1: {
         "data": ["10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99"],
-        "min": 4
+        # "min": 4
     },
     # Menopause
     2: {
         "data": ["lt40", "ge40", "premeno"],
-        "min": 1
+        # "min": 1
     },
     # Tumor-size
     3: {
         "data": ["0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"],
-        "min": 5.5
+        # "min": 5.5
     },
     # Inv-nodes
     4: {
         "data": ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18-20", "21-23", "24-26", "27-29", "30-32", "33-35", "36-39"],
-        "min": 6,
-        "remove": 1
+        # "min": 6,
+        # "remove": 1
     },
     # Node-caps
     5: {
         "data": ["?", "yes", "no"],
         "min": 1,
-        "remove": 1
+        # "remove": 1
     },
     # Deg-malig
     6: ["1","2","3"],
@@ -221,7 +227,8 @@ keys = {
     # Breast-quad
     8: {
         "data": ["?","left_up", "left_low", "right_up", "right_low", "central"],
-        "remove": 1
+        "min": 1,
+        # "remove": 1,
     },
     # Irradiant
     9: {
