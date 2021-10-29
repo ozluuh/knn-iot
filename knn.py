@@ -1,260 +1,232 @@
 #!/usr/bin/env python
-
-# Módulos (Bibliotecas)
 import math
 
-
-# Definição das funções
-# Utilizando como base Euclidiana
-def calc_distance(item1, item2):
-    if type(item1) is not list or type(item2) is not list:
-        raise ValueError(f"É esperado uma lista como argumento e foi passado {type(item1)} e {type(item2)}")
-    if len(item1) != len(item2):
-        raise RuntimeError(f"Comprimento das listas divergentes. Verifique os dados de entrada.")
-
+# Math
+def distancia_euclidiana(p1, p2):
     total = 0
 
-    for p in range(len(item1)):
-        total += (item1[p] - item2[p]) ** 2
-
+    for i in range(len(p1)):
+        total += (p1[i] - p2[i]) ** 2
+    
     return math.sqrt(total)
 
-
-def calc_hypotenuse(a, b):
-    return math.sqrt(a * a + b * b)
-
-
-def open_file(filename, dic):
-    samples = []
-
-    with open(filename, "r") as dataset:
-        for line in dataset.readlines():
-            tempdata = line.replace("\n", "").split(",")
-
-            data = format_with(tempdata, dic)
-            samples.append(data)
-
-    with open("output.data", "w") as output:
-        for entry in samples:
-            r = str(entry).replace("[","").replace("]","")
-            # print(r)
-            output.write(f"{r}\n")
-
-    return samples
-
-
-def format_with(sample_list, dict_):
-    if type(sample_list) is not list:
-        raise ValueError(f"É esperado uma lista como argumento e foi passado {type(sample_list)}")
-
-    normalized_sample = []
-    
-    for idx in range(len(sample_list)):
-        dict_items = dict_[idx]
-        v_min = 0
-        decimal = 2
-
-        if type(dict_items) is dict:
-            _temp = dict_items
-
-            if "remove" in _temp:
-                continue
-            
-            dict_items, v_min, decimal = normalize_obj_items(_temp)
-            
-            del _temp
-        
-        items_max_len = len(dict_items) - 1
-        item_dict_pos = dict_items.index(sample_list[idx])
-
-        value = normalize_scale(item_dict_pos, items_max_len, v_min)
-        normalized_sample.append(round_default(value, decimal))
-    
-    return normalized_sample
-
-def normalize_obj_items(item):
-    dict_items = item["data"]
-    v_min = 0
-    decimal = 2
-
-    if "min" in item:
-        v_min = item["min"]
-    if "decimal" in item:
-        decimal = item["decimal"]
-    if "reverse" in item:
-        dict_items.reverse()
-    
-    return dict_items, v_min, decimal
-
-# Realiza a conversão entre escalas
-# Dica: em caso de trabalhar com lista, definir o comprimento - 1
-def normalize_scale(x, v_max, v_min):
+def escala_normalizada(x, v_max, v_min):
     return (x - v_min) / (v_max - v_min)
 
-# Define a quantidade de casas decimais
-def round_default(value, pos = None):
-    if pos is None:
-        return value
-    
-    if pos == 0:
-        return round(value)
-    
-    return round(value, pos)
+# Util
+def ler_arquivo(filename, keys):
+    amostras = []
+    total_descarte = 0
 
-
-# Quantidade de amostras por classe
-def info_dataset(samples, clazz_pos, info = True):
-    output = {}
-
-    for sample in samples:
-        sample_clazz = sample[clazz_pos]
-        try:
-            output[sample_clazz] = output[sample_clazz] + 1
-        except KeyError:
-            output[sample_clazz] = 1
-
-    if info:
-        print('Total de amostras: ', len(samples))
-        print('Amostras: ', output)
-
-    # Total de amostras + Total por classes (ordenado de acordo com posição)
-    return [len(samples)] + [x for x in output.values()]
-
-
-# Separa o conjunto de treinamento e testes
-# perc = Percentual de treinamento (teste será calculado automaticamente)
-def separate_samples(samples, clazz, perc, info = True):
-    _, recurrence, no_recurrence = info_dataset(samples, clazz, info)
-
-    max_output_no_recurrence = int(perc * no_recurrence)
-    max_output_recurrence = int((1.0 - perc) * recurrence)
-
-    amount_no_recurrence = 0
-    amount_recurrence = 0
-
-    training_samples = []
-    test_samples = []
-
-    for sample in samples:
-        if(amount_no_recurrence + amount_recurrence) < (max_output_no_recurrence + max_output_recurrence):
-            # Conjunto de treinamento
-            training_samples.append(sample)
+    with open(filename, "r") as dataset:
+        for instancia in dataset.readlines():
+            # no-recurrence-events = 1
+            # recurrence-events = 0
+            x = instancia.replace("\n", "").split(",")
             
-            if sample[clazz] == 1 and amount_no_recurrence < max_output_no_recurrence:
-                amount_no_recurrence += 1
-            else:
-                amount_recurrence += 1
+            try:
+                amostra_normalizada = normalizar_arquivo(x, keys)
+                amostras.append(amostra_normalizada)
+            except ValueError:
+                total_descarte += 1
+
+
+    with open("output.data", "w") as output:
+        for item in amostras:
+            item_string = str(item).replace("[","").replace("]","")
+            output.write(f"{item_string}\n")
+
+    print(f"Total amostras descartadas: {total_descarte}")
+
+    return amostras
+
+def normalizar_arquivo(amostra, names):
+    amostra_normalizada = []
+
+    for indice in range(len(amostra)):
+        itens = names[indice] # Obtém os valores possíveis para aquela chave
+        v_min = 0
+        decimal = 2
+        normalize = 1
+
+        if type(itens) is dict: # verifica se os valores são chaves
+            temp_itens = itens
+            itens = temp_itens["data"] # Pega os valores para aquela chave
+
+            if "remove" in temp_itens:
+                continue
+
+            if "min" in temp_itens: # se estipulado um mínimo, altera para ele invés do padrão
+                v_min = temp_itens["min"]
+            if "decimal" in temp_itens: # se possui decimal, usa ele invés do padrão
+                decimal = temp_itens["decimal"]
+            if "reverse" in temp_itens:
+                itens.reverse()
+            if "normalize" in temp_itens:
+                normalize = temp_itens["normalize"]
+
+            del temp_itens
+
+        valor_atual = amostra[indice] # Posição atual na amostra
+        valor = valor_atual
+
+        if normalize:
+            v_max = len(itens) - 1 # Tamanho total da lista - 1 (lista inicia em 0)
+            item_indice = itens.index(valor_atual) # indíce do valor da amostra na lista de valores possíveis
+
+            valor = escala_normalizada(item_indice, v_max, v_min)
+        
+        amostra_normalizada.append(arred(float(valor), decimal))
+    
+    return amostra_normalizada
+
+def arred(valor, decimal = None):
+    if decimal is None:
+        return valor
+    
+    if decimal == 0:
+        return round(valor)
+    
+    return round(valor, decimal)
+
+# Análise
+def info_dataset(amostras, classe, info=True):
+    output1, output2 = 0,0
+
+    for amostra in amostras:
+        if amostra[classe] == 1:
+            output1 += 1 # Paciente sem recorrências
         else:
-            # Conjunto de teste
-            test_samples.append(sample)
-    
-    if info:
-        print(f"Máximo de amostras para não recorrência: {max_output_no_recurrence}")
-        print(f"Máximo de amostras para recorrência: {max_output_recurrence}")
+            output2 += 1 # Paciente com recorrências
 
-    return (training_samples, test_samples)
+    if info == True:
+        print(f"Total de amostras................: {len(amostras)}")
+        print(f"Total Normal (Sem recorrência)...: {output1}")
+        print(f"Total Alterado (Com recorrência).:  {output2}")
 
-def knn(training_samples, sample_test, k, clazz):
-    distances = {}
-    
-    # Distância euclidiana de uma amostra sobre o conjunto
-    for idx in range(len(training_samples)):
-        distance = calc_distance(training_samples[idx], sample_test)
-        distances[idx] = distance
+    return [len(amostras), output1, output2]
 
-    # Chaves dos vizinhos mais próximos
-    neighboors = sorted(distances, key=distances.get)[:k]
+def separar_amostras(amostras, porcentagem, classe):
+    _, output1, output2 = info_dataset(amostras, classe)
 
-    # print(neighboors)
+    treinamento = []
+    teste = []
+
+    max_output1 = int(porcentagem*output1)
+    max_output2 = int((1 - porcentagem)*output2)
+
+    total_output1 = 0
+    total_output2 = 0
+
+    for amostra in amostras:
+        if(total_output1 + total_output2) < (max_output1 + max_output2):
+            # Inserir em treinamento
+            treinamento.append(amostra)
+            if amostra[classe] == 1 and total_output1 < max_output1:
+                total_output1 += 1
+            else:
+                total_output2 += 1
+        else:
+            # Insere em teste
+            teste.append(amostra)
+
+    return [treinamento, teste]
+
+def knn(treinamento, nova_amostra, classe, k):
+    distancias = {}
+    tamanho_treino = len(treinamento)
+
+    # Calcula distância euclidiana
+    for i in range(tamanho_treino):
+        d = distancia_euclidiana(treinamento[i], nova_amostra)
+        distancias[i] = d
+
+    # Obtém k-vizinhos
+    k_vizinhos = sorted(distancias, key=distancias.get)[:k] # retorna do começo até o k-1
 
     # Votação
-    amount_no_recurrence = 0
-    amount_recurrence = 0
-
-    for idx in neighboors:
-        if training_samples[idx][clazz] == 1: # saída da classe 1 (Não Recorrência)
-            amount_no_recurrence += 1
-        else:
-            amount_recurrence += 1
+    qtd_output1 = 0
+    qtd_output2 = 0
+    for indice in k_vizinhos:
+        if treinamento[indice][classe] == 1: # saída normal
+            qtd_output1 += 1
+        else:                                # saída alterada
+            qtd_output2 += 1
     
-    if amount_no_recurrence > amount_recurrence:
+    if qtd_output1 > qtd_output2:
         return 1
-    
-    return 0
+    else:
+        return 0
 
-
-# Dados pra teste
-keys = {
+# Definição
+names = {
     # Class
-    0: {
+    0:{
         "data": ["recurrence-events", "no-recurrence-events"],
-        "decimal": 0
+        "decimal": 0,
+        "reverse": 1
     },
     # Age
-    1: {
+    1:{
         "data": ["10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99"],
-        # "min": 4
+        "decimal": 1
     },
     # Menopause
-    2: {
-        "data": ["lt40", "ge40", "premeno"],
-        # "min": 1
-    },
+    2:["lt40", "ge40", "premeno"],
     # Tumor-size
-    3: {
+    3:{
         "data": ["0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59"],
-        # "min": 5.5
+        "decimal": 1
     },
     # Inv-nodes
-    4: {
+    4:{
         "data": ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18-20", "21-23", "24-26", "27-29", "30-32", "33-35", "36-39"],
-        # "min": 6,
-        # "remove": 1
+        "decimal": 1,
+        "min": 6
     },
     # Node-caps
-    5: {
-        "data": ["?", "yes", "no"],
-        "min": 1,
-        # "remove": 1
+    5:{
+        "data": ["yes", "no"],
     },
     # Deg-malig
-    6: ["1","2","3"],
+    6:{
+        "data": ["1","2","3"],
+        "normalize": 0,
+        "decimal": 0
+    },
     # Breast
-    7: {
+    7:{
         "data": ["left","right"],
-        # "remove": 1
+        "decimal": 0
     },
     # Breast-quad
-    8: {
-        "data": ["?","left_up", "left_low", "right_up", "right_low", "central"],
-        "min": 1,
-        # "remove": 1,
+    8:{
+        "data": ["left_up", "left_low", "right_up", "right_low", "central"],
     },
     # Irradiant
-    9: {
-        "data": ["yes", "no"]
+    9:{
+        "data": ["yes", "no"],
+        "decimal": 0,
+        "reverse": 1
     }
 }
 
-amostras = open_file("breast-cancer.data", keys)
+# Teste
+acertos = 0
+pos_classe = 0
+porcentagem = 0.8
+k = 17
+amostras = ler_arquivo("breast-cancer.data", names)
 
-# print(f"Amostras: {amostras}")
+treinamento, teste = separar_amostras(amostras, porcentagem, pos_classe)
 
-# Percentual de treinamento
-perc=0.8
-clazz=0
+for amostra in teste:
+    classe_retornada = knn(treinamento, amostra, pos_classe, k)
+    # print(classe_retornada, amostra[pos_classe])
+    if amostra[pos_classe] == classe_retornada:
+        acertos += 1
 
-training, test = separate_samples(amostras, clazz, perc)
-
-amount_success = 0
-k=17
-
-for sample in test:
-    class_result = knn(training, sample, clazz=clazz, k=k)
-    if sample[clazz] == class_result:
-        amount_success += 1
-
-print(f"Total Treinamento: {len(training)}")
-print(f"Total Teste: {len(test)}")
-print(f"Total Acertos: {amount_success}")
-print(f"Porcentagem Acerto: {round_default(100*amount_success/len(test), 0)}%")
+print(f"Total de treinamento..: {len(treinamento)}")
+print(f"Total de testes.......: {len(teste)}")
+print(f"Total de acertos......: {acertos}")
+print(f"Porcentagem de acerto.: {arred(100*acertos/len(teste), 0)} %")
