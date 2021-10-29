@@ -40,6 +40,13 @@ Repositório dedicado a entrega do material para a realização do Checkpoint 2 
   |breast-quad| 5|
   |irradiat| 2|
 
+## Integrantes
+
+|  RM   | Nome           |
+| :---: | -------------- |
+| 84198 | Daiane Estenio |
+| 85398 | Luís Paulino   |
+
 ## Links interessantes
 
 Sites e documentos que tiveram base para a elaboração desse checkpoint:
