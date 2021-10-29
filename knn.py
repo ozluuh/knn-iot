@@ -20,8 +20,6 @@ def ler_arquivo(filename, keys):
 
     with open(filename, "r") as dataset:
         for instancia in dataset.readlines():
-            # no-recurrence-events = 1
-            # recurrence-events = 0
             x = instancia.replace("\n", "").split(",")
             
             try:
